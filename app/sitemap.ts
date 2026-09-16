@@ -1,2 +1,6 @@
-import type { MetadataRoute } from "next"; import { products } from "@/src/data/catalog";
-export default function sitemap(): MetadataRoute.Sitemap { const base="https://www.servomuto.it"; return ["","/collections","/products","/projects","/about","/archive","/trade","/contact"].map(path=>({url:base+path,lastModified:new Date()})).concat(products.map(({slug})=>({url:`${base}/products/${slug}`,lastModified:new Date()}))); }
+import type { MetadataRoute } from "next";
+import { sourcePages, localHref, archiveEntries } from "@/src/data/content";
+export default function sitemap(): MetadataRoute.Sitemap {
+  const paths = new Set(["/", "/collections", "/products", "/projects", "/trade", "/about", "/archive", "/contact", "/privacy", "/press", "/site-index", ...sourcePages.map(page => localHref(page.sourceUrl)), ...archiveEntries.map(entry => `/archive/${entry.slug}`)]);
+  return [...paths].filter(path => path.startsWith("/") && !path.includes("?")).map(path => ({ url: `https://www.servomuto.it${path}` }));
+}

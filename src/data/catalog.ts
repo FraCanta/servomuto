@@ -1,9 +1,27 @@
+import { getSourcePage, localHref, pageImages, productLinks, sourcePath, textBlocks } from "./content";
+export { archiveEntries } from "./content";
+
 export type ProductType = "Pendant" | "Table" | "Wall" | "Floor";
-export type Product = { slug: string; name: string; type: ProductType; collection: string; description: string; materials?: string[]; leadTime?: string; images: string[]; };
-export const products: Product[] = [
- { slug:"materia", name:"Materia", type:"Pendant", collection:"Materia", description:"A study in linen, steel and colour-block geometry.", materials:["Dedar linen", "Painted and chromed iron", "Painted wood"], leadTime:"4–6 weeks · Made to order", images:["/images/products/materia.jpg"] },
- { slug:"venus", name:"Venus", type:"Pendant", collection:"Venus", description:"Heat-sealed Lycra, chromed iron and aluminium in a luminous sculptural form.", materials:["Heat-sealed Lycra", "Chromed iron", "Aluminium"], leadTime:"4–6 weeks · Made to order", images:["/images/products/venus.jpg"] },
- { slug:"otto", name:"Otto", type:"Pendant", collection:"Otto", description:"A finely pleated pendant in Rubelli and Dedar fabrics.", materials:["Rubelli / Dedar fabric", "Pleated pongé", "Painted iron"], leadTime:"4–6 weeks · Made to order", images:["/images/products/otto.jpg"] },
- { slug:"huf", name:"Huf", type:"Table", collection:"Huf", description:"A table lamp pairing cotton fabric, cement and chromed iron.", materials:["Cotton fabric", "Cement", "Chromed iron"], leadTime:"4–5 weeks · Made to order", images:["/images/home/servomuto-arbesser-44.jpg"] },
-];
-export const archiveEntries = [{year:"2023",title:"Euroluce at Salone del Mobile",location:"Milan"},{year:"2022",title:"Contemporary Cluster at Palazzo Brancaccio",location:"Rome"},{year:"2022",title:"Milan Design Week at Alcova",location:"Milan"},{year:"2020",title:"Edit Napoli",location:"Napoli"}];
+export type Product = {
+  slug: string; name: string; type?: ProductType; types: ProductType[];
+  collection: string; description: string; materials: string[]; leadTime?: string;
+  images: string[]; sourcePath: string;
+};
+const categoryPages: [ProductType, string][] = [["Pendant", "/pendantproducts"], ["Table", "/tableproducts"], ["Wall", "/wallproducts"], ["Floor", "/floorproducts"]];
+export const products: Product[] = productLinks.map(link => {
+  const path = sourcePath(link.href);
+  const page = getSourcePage(path);
+  const texts = textBlocks(page).filter(block => block.kind === "text").map(block => block.text);
+  const types = categoryPages.filter(([, category]) => getSourcePage(category)?.links.some(item => sourcePath(item.href) === path)).map(([type]) => type);
+  const card = getSourcePage("/allproducts")?.images.find(image => image.alt.replace(/&amp;/g, "&") === link.label.replace(/&amp;/g, "&"));
+  const cardPath = card ? localHref(card.originalUrl) : undefined;
+  const images = [...(cardPath?.startsWith("/") ? [cardPath] : []), ...pageImages(page).map(image => image.src)];
+  return {
+    slug: path.slice(1), name: link.label.replace(/&amp;/g, "&"), type: types[0], types,
+    collection: link.label.replace(/&amp;/g, "&"),
+    description: texts.find(text => text.length > 90) ?? "",
+    materials: texts.filter(text => /^materials?\s*:/i.test(text)),
+    leadTime: texts.find(text => /^lead\s*time\s*:/i.test(text))?.replace(/^lead\s*time\s*:\s*/i, ""),
+    images: [...new Set(images)], sourcePath: path,
+  };
+});
