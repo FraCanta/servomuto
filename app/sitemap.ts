@@ -1,0 +1,2 @@
+import type { MetadataRoute } from "next"; import { products } from "@/src/data/catalog";
+export default function sitemap(): MetadataRoute.Sitemap { const base="https://www.servomuto.it"; return ["","/collections","/products","/projects","/about","/archive","/trade","/contact"].map(path=>({url:base+path,lastModified:new Date()})).concat(products.map(({slug})=>({url:`${base}/products/${slug}`,lastModified:new Date()}))); }
